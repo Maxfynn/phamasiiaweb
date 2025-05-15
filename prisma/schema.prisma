@@ -1,0 +1,131 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ActionType {
+  ENTRY
+  SALE
+}
+
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  STAFF
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  email      String    @unique
+  password   String
+  role       UserRole
+  customerId Int?
+  customer   Customer? @relation("UserCustomer", fields: [customerId], references: [id])
+  staff      Staff?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Customer {
+  id           Int      @id @default(autoincrement())
+  customerName String
+  StoreName    String   @unique
+  location     String   // Add this field
+  phone1       String
+  phone2       String?
+  users        User[]   @relation("UserCustomer")
+  staff        Staff[]
+  stores       Store[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Staff {
+  id         Int      @id @default(autoincrement())
+  staffName  String
+  storeName  String   // Staff enters this during signup to match a Customer's StoreName
+  location   String
+  phone1     String
+  phone2     String?
+  email      String   @unique
+  userId     Int      @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId Int?     // Derived from matched StoreName
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([storeName])  // Optional: helpful for fast lookups
+}
+
+model Store {
+  id         Int      @id @default(autoincrement())
+  storeName  String
+  location   String
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  drugstore  Drugstore[]
+  createdAt  DateTime @default(now())
+}
+
+model Drugstore {
+  id               Int      @id @default(autoincrement())
+  type             String
+  stockType        String
+  name             String
+  brand            String
+  amount           Float    // total amount purchased (for backward compatibility)
+  doseQuantity     Int      // total doses
+  unitCostPrice    Float    // calculated: purchasePrice / doseQuantity
+  remainingQuantity Int     // remaining doses after sales
+  manufacturedDate DateTime
+  expireDate       DateTime
+  purchasePrice    Float
+  salesPrice       Float
+  location         String
+  createdAt        DateTime @default(now())
+  status           String   @default("AVAILABLE")
+
+  storeId Int   // we have remove '@unique'
+  store   Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  Sales   Sales[]
+  History History[]
+}
+
+model Sales {
+  id              Int      @id @default(autoincrement())
+  drugstoreId     Int?
+  doseSold        Int
+  unitCostPrice   Float
+  salesPrice      Float
+  profit          Float
+  soldAt          DateTime @default(now())
+  closed          Boolean  @default(false)
+
+  drugstore       Drugstore? @relation(fields: [drugstoreId], references: [id], onDelete: SetNull)
+
+  @@map("sales")
+}
+
+model History {
+  id          Int      @id @default(autoincrement())
+  drugstoreId Int?
+  action      String
+  drugName    String
+  details     String
+  timestamp   DateTime @default(now())
+
+  drugstore   Drugstore? @relation(fields: [drugstoreId], references: [id], onDelete: SetNull)
+
+  @@map("history")
+}
+
+model Expenses {
+  id        Int      @id @default(autoincrement())
+  exp       String
+  value     Int
+  createdAt DateTime @default(now())
+}
