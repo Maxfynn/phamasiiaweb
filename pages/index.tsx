@@ -18,7 +18,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const {
+  const 
+  {
     register,
     handleSubmit,
     formState: { errors },

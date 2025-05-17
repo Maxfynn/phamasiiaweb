@@ -195,7 +195,7 @@ const StaffDashboard = () => {
               <AiOutlineMenu size={24} />
             </button>
             <h1 className="text-4xl md:text-3xl font-bold text-blue-600">
-              Welcome to {storeName} Admin Panel
+              Welcome to {storeName} Staff Panel
             </h1>
             <div className="flex items-center space-x-4">
               <button className="text-gray-500">🔔</button>
