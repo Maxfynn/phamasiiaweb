@@ -42,7 +42,7 @@ const SalesPanel = () => {
   const [doseSold, setDoseSold] = useState<number>(0);
   const [sellingPrice, setSellingPrice] = useState<number>(0);
 
-  useEffect(() => {
+  // Fetch inventory
   const fetchDrugs = async () => {
     try {
       const res = await fetch("/api/drugstore/store");
@@ -65,14 +65,16 @@ const SalesPanel = () => {
     }
   };
 
-  fetchDrugs();
-}, []);
+  useEffect(() => {
+    fetchDrugs();
+  }, []);
 
-
+  // Handle sale
   const handleSale = async () => {
     const storeItem = store.find((item) => item.id === selectedDrugId);
     if (!storeItem) return alert("Drug not found");
-    if (doseSold <= 0 || sellingPrice <= 0) return alert("Enter valid values");
+    if (doseSold <= 0 || sellingPrice <= 0)
+      return alert("Enter valid values");
     if (storeItem.remaining_quantity < doseSold)
       return alert("Insufficient stock");
 
@@ -91,6 +93,7 @@ const SalesPanel = () => {
           unitCostPrice: storeItem.unit_cost_price,
           salesPrice: sellingPrice,
           profit: parseFloat(profit.toFixed(2)),
+          closed: false, // Optional, can be set to true if needed
         }),
       });
 
@@ -99,11 +102,7 @@ const SalesPanel = () => {
         throw new Error(errorData.error || "Something went wrong");
       }
 
-      const updatedStore = store.map((item) =>
-        item.id === storeItem.id
-          ? { ...item, remaining_quantity: item.remaining_quantity - doseSold }
-          : item
-      );
+      const result = await res.json();
 
       const newSale: SaleEntry = {
         id: uuidv4(),
@@ -123,12 +122,17 @@ const SalesPanel = () => {
         timestamp: dayjs().format(),
       };
 
-      setStore(updatedStore);
-      setSales([...sales, newSale]);
-      setHistory([newHistory, ...history]);
+      await fetchDrugs(); // Update store with latest stock
+
+      setSales((prev) => [...prev, newSale]);
+      setHistory((prev) => [newHistory, ...prev]);
+
+      // Reset form
       setDoseSold(0);
       setSellingPrice(0);
-      alert("Sale recorded successfully!");
+      setSelectedDrugId(0);
+
+      alert("Sale recorded and inventory updated!");
     } catch (error: any) {
       alert("Error: " + error.message);
       console.error("Sale submission error:", error);
@@ -173,7 +177,9 @@ const SalesPanel = () => {
         <h3 className="text-xl font-semibold mb-3">Sell Drug</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block mb-1 text-sm font-medium">Select Drug</label>
+            <label className="block mb-1 text-sm font-medium">
+              Select Drug
+            </label>
             <select
               className="p-2 border rounded w-full"
               value={selectedDrugId}
@@ -200,13 +206,17 @@ const SalesPanel = () => {
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium">Selling Price (TSH)</label>
+            <label className="block mb-1 text-sm font-medium">
+              Selling Price (TSH)
+            </label>
             <input
               type="number"
               className="p-2 border rounded w-full"
               placeholder="e.g. 2000"
               value={sellingPrice}
-              onChange={(e) => setSellingPrice(parseFloat(e.target.value))}
+              onChange={(e) =>
+                setSellingPrice(parseFloat(e.target.value))
+              }
             />
           </div>
         </div>
