@@ -91,6 +91,7 @@ model Drugstore {
   storeId Int   // we have remove '@unique'
   store   Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
+  salesHistories SalesHistory[]  // 👈 back relation
   Sales   Sales[]
   History History[]
 }
@@ -109,6 +110,21 @@ model Sales {
 
   @@map("sales")
 }
+
+model SalesHistory {
+  id             Int       @id @default(autoincrement())
+  drugstoreId    Int
+  drugstore      Drugstore @relation(fields: [drugstoreId], references: [id], onDelete: Cascade)
+  doseSold       Int
+  unitCostPrice  Float
+  salesPrice     Float
+  profit         Float
+  dateSold       DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+
+  @@index([drugstoreId])
+}
+
 
 model History {
   id          Int      @id @default(autoincrement())
