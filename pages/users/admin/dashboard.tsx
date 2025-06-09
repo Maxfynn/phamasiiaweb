@@ -11,14 +11,14 @@ import Image from "next/image";
 import Link from "next/link";
 
 // Import your page components
-import Overview from "../../components/Overview/OverviewPanel";
-import Drugs from "../../components/DrugStore/index";
-import ExpensesPanel from "../../components/Expenses/ExpPanel";
-import Reports from "../../components/Reports/RepPanel";
-import Staff from "../../components/Staff/StaffPanel";
-import Stores from "../../components/Stores/StoreLayout";
-import Sales from "../../components/Sales/SalesPanel";
-import Unauthorized from "../../components/Unauthorized";
+import Overview from "../../../components/Overview/OverviewPanel";
+import Drugs from "../../../components/DrugStore/index";
+import ExpensesPanel from "../../../components/Expenses/ExpPanel";
+import Reports from "../../../components/Reports/RepPanel";
+import Staff from "../../../components/Staff/StaffPanel";
+import Stores from "../../../components/Stores/StoreLayout";
+import Sales from "../../../components/Sales/SalesPanel";
+import Unauthorized from "../../../components/Unauthorized";
 
 type Page =
   | "overview"

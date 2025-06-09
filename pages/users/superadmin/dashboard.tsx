@@ -8,13 +8,13 @@ import { FaWallet, FaPills } from "react-icons/fa";
 import Head from "next/head";
 
 // Import your page components (these are the different sections of the admin dashboard)
-import Overview from "../../components/Overview/OverviewPanel";
-import Drugs from "../../components/DrugStore";
-import ExpensesPanel from "../../components/Expenses/ExpPanel";
-import Reports from "../../components/Reports/RepPanel";
-import Staff from "../../components/Staff/StaffPanel";
-import Stores from "../../components/Stores/StoreLayout";
-import Sales from "../../components/Sales/SalesPanel";
+import Overview from "../../../components/Overview/OverviewPanel";
+import Drugs from "../../../components/DrugStore";
+import ExpensesPanel from "../../../components/Expenses/ExpPanel";
+import Reports from "../../../components/Reports/RepPanel";
+import Staff from "../../../components/Staff/StaffPanel";
+import Stores from "../../../components/Stores/StoreLayout";
+import Sales from "../../../components/Sales/SalesPanel";
 import { Store } from "lucide-react";
 
 const AdminDashboard = () => {

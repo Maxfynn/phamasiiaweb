@@ -7,7 +7,11 @@ interface FormData {
   location: string;
 }
 
-export default function CreateStore() {
+interface StoreRegistrationProps {
+  onSuccess?: () => void;
+}
+
+export default function StoreRegistration({ onSuccess }: StoreRegistrationProps) {
   const [formData, setFormData] = useState<FormData>({
     storeName: '',
     customerId: '',
@@ -24,7 +28,6 @@ export default function CreateStore() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          // Format the location as a string (you could also reverse geocode if needed)
           setFormData((prev) => ({
             ...prev,
             location: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
@@ -49,7 +52,6 @@ export default function CreateStore() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    // Basic client-side validation
     if (!formData.storeName || !formData.customerId || !formData.location) {
       setErrorMessage('Please fill in all required fields.');
       return;
@@ -73,14 +75,17 @@ export default function CreateStore() {
         setErrorMessage(data.error || 'An error occurred while creating the store.');
       } else {
         setSuccessMessage('Store created successfully!');
-        // Optionally reset the form (except location, if you wish to keep it)
+
         setFormData((prev) => ({
           ...prev,
           storeName: '',
           customerId: '',
         }));
-        // Optionally, redirect after a delay
-        // setTimeout(() => router.push('/store/list'), 2000);
+
+        // 🔔 Notify parent component (StoreLayout) to refresh table
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (error) {
       setErrorMessage('An error occurred while submitting the form.');
@@ -123,7 +128,7 @@ export default function CreateStore() {
           <input
             type="number"
             name="customerId"
-            placeholder= "Enter Customer ID"
+            placeholder="Enter Customer ID"
             value={formData.customerId}
             onChange={handleChange}
             className="w-full p-2 border rounded mt-1"

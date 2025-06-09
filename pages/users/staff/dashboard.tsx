@@ -7,11 +7,11 @@ import { FaWallet, FaPills } from "react-icons/fa";
 import Head from "next/head";
 
 //Import The Important Components for the Staff Dashboard
-import Overview from "../../components/Overview/OverviewPanel";
-import ExpensesPanel from "../../components/Expenses/ExpPanel";
-import Reports from "../../components/Reports/RepPanel";
-import Sales from "../../components/Sales/SalesPanel";
-import Drugs from "../../components/DrugStore/index";
+import Overview from "../../../components/Overview/OverviewPanel";
+import ExpensesPanel from "../../../components/Expenses/ExpPanel";
+import Reports from "../../../components/Reports/RepPanel";
+import Sales from "../../../components/Sales/SalesPanel";
+import Drugs from "../../../components/DrugStore/index";
 
 
 const StaffDashboard = () => {

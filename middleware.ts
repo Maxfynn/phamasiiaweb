@@ -1,10 +1,11 @@
 // middleware.ts
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({ req: request });
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = request.nextUrl;
 
   // Protected routes
@@ -24,7 +25,10 @@ export async function middleware(request: NextRequest) {
 
   // If authenticated but trying to access auth route
   if (authRoutes.includes(pathname) && token) {
-    const role = typeof token === 'object' && token && 'role' in token ? (token as { role?: string }).role : undefined;
+    const role =
+      typeof token === 'object' && token && 'role' in token
+        ? (token as { role?: string }).role
+        : undefined;
     const redirectPath = getRedirectPath(role);
     return NextResponse.redirect(new URL(redirectPath, request.url));
   }
@@ -35,9 +39,19 @@ export async function middleware(request: NextRequest) {
 function getRedirectPath(role: string = '') {
   const lowerRole = role.toLowerCase();
   const rolePaths: { [key: string]: string } = {
-    superadmin: "/users/superadmin/dashboard",
-    admin: "/users/admin/dashboard",
-    staff: "/staff/dashboard",
+    superadmin: '/users/superadmin/dashboard',
+    admin: '/users/admin/dashboard',
+    staff: '/staff/dashboard',
   };
-  return rolePaths[lowerRole] || "/";
+  return rolePaths[lowerRole] || '/';
 }
+
+// Required for Edge runtime compatibility
+export const config = {
+  matcher: [
+    '/users/superadmin/dashboard',
+    '/users/admin/dashboard',
+    '/staff/dashboard',
+    '/',
+  ],
+};

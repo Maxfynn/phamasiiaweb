@@ -32,30 +32,44 @@ export default async function handler(
   }
 
   try {
+    // Fetch staff and associated user (with password)
     const existingStaff = await prisma.staff.findUnique({
       where: { id: staffId },
+      include: {
+        user: {
+          select: { password: true }, // include password from User
+        },
+      },
     });
 
     if (!existingStaff) {
       return res.status(404).json({ message: 'Staff member not found.' });
     }
 
-    let hashedPassword = existingStaff.password; // Use existing password if not provided
+    let hashedPassword = existingStaff.user?.password; // fallback to current password
 
     if (password) {
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
+    // Update the user first
+    await prisma.user.update({
+      where: { id: existingStaff.userId },
+      data: {
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    // Update the staff record
     await prisma.staff.update({
       where: { id: staffId },
       data: {
         staffName,
         storeName,
         location,
-        email,
         phone1,
         phone2,
-        password: hashedPassword,
       },
     });
 
