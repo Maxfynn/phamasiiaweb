@@ -1,43 +1,59 @@
 // pages/api/expenses/daily-total.ts
+
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, Expenses } from '@prisma/client';  // Import your Prisma model type here
+import { PrismaClient } from '@prisma/client'; // Use the client only from here
 import { format } from 'date-fns';
 
+// Initialize Prisma Client
 const prisma = new PrismaClient();
+
+// Define a type for the response structure
+type DailyTotal = {
+  date: string;
+  total: number;
+  expenses: {
+    id: number;
+    exp: string;
+    value: number;
+    createdAt: Date;
+  }[];
+};
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<{ date: string; total: number; expenses: Expenses[] }[] | { error: string }>
+  res: NextApiResponse<DailyTotal[] | { error: string }>
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    // Type the expenses explicitly as Expenses[]
-    const expenses: Expenses[] = await prisma.expenses.findMany({
+    // Fetch all expenses ordered by creation date
+    const expenses = await prisma.expenses.findMany({
       orderBy: {
         createdAt: 'asc',
       },
     });
 
-    // dailyTotals groups expenses by date, each date has total and expenses array
-    const dailyTotals: { [date: string]: { total: number; expenses: Expenses[] } } = {};
+    // Group expenses by date
+    const dailyTotals: Record<string, { total: number; expenses: typeof expenses }> = {};
 
-    expenses.forEach((expense: Expenses) => {
+    for (const expense of expenses) {
       const date = format(expense.createdAt, 'yyyy-MM-dd');
-      if (dailyTotals[date]) {
-        dailyTotals[date].total += expense.value;
-        dailyTotals[date].expenses.push(expense);
-      } else {
+
+      if (!dailyTotals[date]) {
         dailyTotals[date] = {
-          total: expense.value,
-          expenses: [expense],
+          total: 0,
+          expenses: [],
         };
       }
-    });
 
-    const result = Object.entries(dailyTotals).map(([date, { total, expenses }]) => ({
+      dailyTotals[date].total += expense.value;
+      dailyTotals[date].expenses.push(expense);
+    }
+
+    // Convert the result to an array
+    const result: DailyTotal[] = Object.entries(dailyTotals).map(([date, { total, expenses }]) => ({
       date,
       total,
       expenses,
