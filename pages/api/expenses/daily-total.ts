@@ -1,28 +1,30 @@
 // pages/api/expenses/daily-total.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Expenses } from '@prisma/client';  // Import your Prisma model type here
 import { format } from 'date-fns';
 
 const prisma = new PrismaClient();
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<{ date: string; total: number; expenses: any[] }[] | { error: string }>
+  res: NextApiResponse<{ date: string; total: number; expenses: Expenses[] }[] | { error: string }>
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const expenses = await prisma.expenses.findMany({
+    // Type the expenses explicitly as Expenses[]
+    const expenses: Expenses[] = await prisma.expenses.findMany({
       orderBy: {
         createdAt: 'asc',
       },
     });
 
-    const dailyTotals: { [date: string]: { total: number; expenses: any[] } } = {};
+    // dailyTotals groups expenses by date, each date has total and expenses array
+    const dailyTotals: { [date: string]: { total: number; expenses: Expenses[] } } = {};
 
-    expenses.forEach((expense) => {
+    expenses.forEach((expense: Expenses) => {
       const date = format(expense.createdAt, 'yyyy-MM-dd');
       if (dailyTotals[date]) {
         dailyTotals[date].total += expense.value;
