@@ -15,12 +15,13 @@ export default async function handler(
 
   const { staffName, storeName, location, email, phone1, phone2, password } = req.body;
 
+  // Validate required fields
   if (!staffName || !storeName || !location || !email || !phone1 || !password) {
     return res.status(400).json({ message: 'Missing required fields.' });
   }
 
   try {
-    // Check if email already exists in User or Staff
+    // Check if email exists in User or Staff
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(409).json({ message: 'Email already exists as a user.' });
@@ -31,26 +32,40 @@ export default async function handler(
       return res.status(409).json({ message: 'Email already exists as a staff member.' });
     }
 
-    // Hash the password
+    // Match Customer by storeName
+    const customer = await prisma.customer.findUnique({
+      where: { StoreName: storeName },
+    });
+
+    if (!customer) {
+      return res.status(404).json({ message: 'No customer found matching the given storeName.' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create User and Staff in a single transaction
-    await prisma.staff.create({
-      data: {
-        staffName,
-        storeName,
-        location,
-        email,
-        phone1,
-        phone2,
-        user: {
-          create: {
-            email,
-            password: hashedPassword,
-            role: UserRole.STAFF,
-          },
+    // Create User and Staff within a single transaction
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          role: UserRole.STAFF,
+          customerId: customer.id,
         },
-      },
+      });
+
+      await tx.staff.create({
+        data: {
+          staffName,
+          storeName,
+          location,
+          email,
+          phone1,
+          phone2,
+          userId: user.id,
+          customerId: customer.id,
+        },
+      });
     });
 
     res.status(201).json({ message: 'Staff member created successfully.' });
