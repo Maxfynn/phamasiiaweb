@@ -1,9 +1,15 @@
 // pages/api/staff/create.ts
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
+
+// Define UserRole enum if not imported from elsewhere
+enum UserRole {
+  STAFF = 'STAFF',
+  // Add other roles if needed
+}
 
 export default async function handler(
   req: NextApiRequest,
