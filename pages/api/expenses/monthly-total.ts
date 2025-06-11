@@ -1,46 +1,67 @@
 // pages/api/expenses/monthly-total.ts
-import { PrismaClient, Expenses } from '@prisma/client';
-import { format } from 'date-fns';
+
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { PrismaClient } from '@prisma/client';
+import { format } from 'date-fns';
 
 const prisma = new PrismaClient();
 
-interface MonthlyTotal {
+// Define the response type structure
+type MonthlyTotal = {
   month: string;
   total: number;
-  expenses: Expenses[];
-}
+  expenses: {
+    id: number;
+    exp: string;
+    value: number;
+    createdAt: Date;
+  }[];
+};
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<MonthlyTotal[] | { message: string }>
+  res: NextApiResponse<MonthlyTotal[] | { error: string }>
 ) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const expenses = await prisma.expenses.findMany();
-
-    const monthlyTotals: { [key: string]: MonthlyTotal } = expenses.reduce(
-      (acc: { [key: string]: MonthlyTotal }, expense: Expenses) => {
-        const month = format(expense.createdAt, 'yyyy-MM');
-        if (!acc[month]) {
-          acc[month] = { month, total: 0, expenses: [] };
-        }
-        acc[month].total += expense.value;
-        acc[month].expenses.push(expense);
-        return acc;
+    const expenses = await prisma.expenses.findMany({
+      orderBy: {
+        createdAt: 'asc',
       },
-      {}
+    });
+
+    // Group expenses by month (e.g., "2025-06")
+    const monthlyTotals: Record<string, { total: number; expenses: typeof expenses }> = {};
+
+    for (const expense of expenses) {
+      const month = format(expense.createdAt, 'yyyy-MM');
+
+      if (!monthlyTotals[month]) {
+        monthlyTotals[month] = {
+          total: 0,
+          expenses: [],
+        };
+      }
+
+      monthlyTotals[month].total += expense.value;
+      monthlyTotals[month].expenses.push(expense);
+    }
+
+    const result: MonthlyTotal[] = Object.entries(monthlyTotals).map(
+      ([month, { total, expenses }]) => ({
+        month,
+        total,
+        expenses,
+      })
     );
 
-    const monthlyTotalsArray: MonthlyTotal[] = Object.values(monthlyTotals);
-
-    res.status(200).json(monthlyTotalsArray);
+    res.status(200).json(result);
   } catch (error) {
     console.error('Error fetching monthly totals:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error' });
   } finally {
     await prisma.$disconnect();
   }
