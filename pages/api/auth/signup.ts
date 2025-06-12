@@ -1,3 +1,4 @@
+
 import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -7,7 +8,7 @@ const prisma = new PrismaClient();
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 
   const {
@@ -27,16 +28,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    await prisma.$connect();
     const hashedPassword = await bcrypt.hash(password, 10);
 
     if (role === "SUPERADMIN") {
       const superAdmin = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          role: "SUPERADMIN",
-        },
+        data: { email, password: hashedPassword, role },
       });
 
       return res.status(201).json({ message: "SuperAdmin created successfully", user: superAdmin });
@@ -44,10 +40,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (role === "ADMIN") {
       if (!customerName || !storeName || !phone1 || !location) {
-        return res.status(400).json({ error: "Missing required customer/store fields for admin." });
+        return res.status(400).json({ error: "Missing required fields for ADMIN." });
       }
 
-      // 1. Create new Customer and User (Admin)
       const newCustomer = await prisma.customer.create({
         data: {
           customerName,
@@ -59,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             create: {
               email,
               password: hashedPassword,
-              role: "ADMIN",
+              role,
             },
           },
         },
@@ -68,8 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const adminUser = newCustomer.users[0];
 
-      // 2. Create the Store associated with the new Customer
-      const newStore = await prisma.store.create({
+      await prisma.store.create({
         data: {
           storeName,
           location,
@@ -80,30 +74,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(201).json({
         message: "Admin, Customer, and Store created successfully",
         user: adminUser,
-        store: newStore,
       });
     }
 
     if (role === "STAFF") {
       if (!staffName || !storeName || !phone1 || !location) {
-        return res.status(400).json({ error: "Missing required staff/store fields for staff." });
+        return res.status(400).json({ error: "Missing required fields for STAFF." });
       }
 
-      const customer = await prisma.customer.findFirst({
-        where: {
-          StoreName: storeName,
-        },
-      });
+      const customer = await prisma.customer.findFirst({ where: { StoreName: storeName } });
 
       if (!customer) {
-        return res.status(404).json({ error: `Store "${storeName}" not found.` });
+        return res.status(404).json({ error: `Customer with store "${storeName}" not found.` });
       }
 
       const staffUser = await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
-          role: "STAFF",
+          role,
           customer: { connect: { id: customer.id } },
           staff: {
             create: {
@@ -123,9 +112,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     return res.status(400).json({ error: "Invalid role specified." });
-
   } catch (error: any) {
-    console.error("Signup error:", error);
+    console.error("Signup error:", error.message);
     return res.status(500).json({ error: "Internal Server Error", details: error.message });
   } finally {
     await prisma.$disconnect();
