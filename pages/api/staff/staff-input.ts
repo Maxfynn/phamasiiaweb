@@ -1,4 +1,5 @@
 // pages/api/staff/create.ts
+import { Prisma } from "@prisma/client";
 import { PrismaClient } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcrypt';
@@ -50,7 +51,7 @@ export default async function handler(
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create User and Staff within a single transaction
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.create({
         data: {
           email,
