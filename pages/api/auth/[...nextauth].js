@@ -86,6 +86,3 @@ const handler = NextAuth({
 
 // For Next.js pages directory (API route):
 export default handler;
-
-// For Next.js app directory (route handler):
-// export { handler as GET, handler as POST };
