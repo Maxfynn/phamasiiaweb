@@ -2,9 +2,18 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
-import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// --- Prisma Singleton Pattern for Vercel ---
+import { PrismaClient } from "@prisma/client";
+let prisma;
+if (process.env.NODE_ENV === "production") {
+  if (!global.prisma) {
+    global.prisma = new PrismaClient();
+  }
+  prisma = global.prisma;
+} else {
+  prisma = new PrismaClient();
+}
 
 const handler = NextAuth({
   providers: [
@@ -74,4 +83,9 @@ const handler = NextAuth({
   debug: process.env.NODE_ENV === "development",
 });
 
-export { handler as GET, handler as POST };
+
+// For Next.js pages directory (API route):
+export default handler;
+
+// For Next.js app directory (route handler):
+// export { handler as GET, handler as POST };
